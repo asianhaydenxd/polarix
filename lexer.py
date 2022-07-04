@@ -13,7 +13,7 @@ NUMBERS = "1234567890"
 WHITESPACE = "\n\v\t\r "
 
 RESERVED_CHARS = "()[]{},;\"\'"
-RESERVED_OPS = ["=", ":", "|", "->", "|=>", "<="]
+RESERVED_OPS = ["=", ":", "|", "->", "|=>", "<=", "\\"]
 
 RESERVED_IDS = ["module", "import", "if", "otherwise", "set", "data", "mut", "infixL", "infixR"]
 
@@ -117,6 +117,11 @@ class Lexer():
             if self.current_char() in NUMBERS:
                 self.tokens.append(self.get_num())
             elif self.current_char() in "\n":
+                if len(self.tokens) > 0:
+                    if self.tokens[-1].category == TokenCategory.Symbol and self.tokens[-1].name == "\\":
+                        self.tokens.pop()
+                        self.pos.next()
+                    continue
                 self.tokens.append(Token(TokenCategory.NewLine, start=self.pos))
                 self.pos.next()
             elif self.current_char() in WHITESPACE:
