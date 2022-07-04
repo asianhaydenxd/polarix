@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from tracemalloc import start
 from typing import List
 from typing_extensions import Self
 from unicodedata import category, lookup
@@ -17,7 +18,7 @@ RESERVED_OPS = ["=", ":", "|", "->"]
 
 RESERVED_IDS = ["module", "import", "if", "otherwise", "enum", "struct", "mut", "infix"]
 
-class LexError:
+class LexError(BaseException):
     def __init__(self, name, position):
         self.name = name
         self.position = position
@@ -113,6 +114,8 @@ class Lexer():
                 self.pos.next()
             elif self.current_char() == "\"" or (self.current_char() == "}" and self.interpolateception > 0):
                 self.tokens.append(self.get_string())
+            elif self.current_char() == "\'":
+                self.tokens.append(self.get_char())
             elif self.current_char() in RESERVED_CHARS:
                 self.tokens.append(Token(TokenCategory.Symbol, self.current_char(), self.pos))
                 self.pos.next()
@@ -192,14 +195,35 @@ class Lexer():
             if not self.pos.in_range() or self.current_char() == "\n":
                 raise UnterminatedStringError(start_pos)
 
-            
-        
         self.pos.next()
 
         return Token(
             TokenCategory.String, 
             string, 
             start_pos, 
+            self.pos
+        )
+
+    def get_char(self):
+        start_pos = self.pos.copy()
+
+        self.pos.next()
+
+        char = self.current_char()
+        if self.current_char() == "\\":
+            char = self.next_escape("\'")
+        else:
+            self.pos.next()
+        
+        if self.current_char() != "\'":
+            raise UnterminatedCharError(start_pos)
+        
+        self.pos.next()
+
+        return Token(
+            TokenCategory.Character,
+            char,
+            start_pos,
             self.pos
         )
 
