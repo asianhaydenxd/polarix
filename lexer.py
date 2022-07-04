@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from tracemalloc import start
 from typing import List
 from typing_extensions import Self
 from unicodedata import category, lookup
