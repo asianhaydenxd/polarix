@@ -70,6 +70,7 @@ class TokenCategory(Enum):
     String     = auto()
     Character  = auto()
     Number     = auto()
+    NewLine    = auto()
     EndOfFile  = auto()
 
 class Token:
@@ -92,6 +93,7 @@ class Token:
             case TokenCategory.String: category = "str"
             case TokenCategory.Character: category = "chr"
             case TokenCategory.Number: category = "num"
+            case TokenCategory.NewLine: category = "newline"
             case TokenCategory.EndOfFile: category = "eof"
 
         return f"[{category}: {self.name}]" if self.name is not None else f"[{category}]"
@@ -114,6 +116,9 @@ class Lexer():
         while self.pos.index < len(self.code):
             if self.current_char() in NUMBERS:
                 self.tokens.append(self.get_num())
+            elif self.current_char() in "\n":
+                self.tokens.append(Token(TokenCategory.NewLine, start=self.pos))
+                self.pos.next()
             elif self.current_char() in WHITESPACE:
                 self.pos.next()
             elif self.current_char() == "\"" or (self.current_char() == "}" and self.interpolateception > 0):
