@@ -70,6 +70,7 @@ class TokenCategory(Enum):
     String     = auto()
     Character  = auto()
     Number     = auto()
+    EndOfFile  = auto()
 
 class Token:
     def __init__(self, category: TokenCategory, name: any = None, start: Position = None, end: Position = None) -> None:
@@ -91,8 +92,9 @@ class Token:
             case TokenCategory.String: category = "str"
             case TokenCategory.Character: category = "chr"
             case TokenCategory.Number: category = "num"
+            case TokenCategory.EndOfFile: category = "eof"
 
-        return f"[{category}: {self.name}]"
+        return f"[{category}: {self.name}]" if self.name is not None else f"[{category}]"
 
 class Lexer():
     def __init__(self, code: str):
@@ -123,6 +125,7 @@ class Lexer():
                 self.pos.next()
             else:
                 self.tokens.append(self.get_word())
+        self.tokens.append(Token(TokenCategory.EndOfFile, start=self.pos))
         return self.tokens
 
     def get_num(self):
