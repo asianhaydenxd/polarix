@@ -99,6 +99,7 @@ class Lexer():
         self.code = code
         self.tokens = []
         self.pos = Position(0, 0, 0, "stdio", code)
+        self.interpolateception = 0
         self.lex()
 
     def current_char(self) -> chr:
@@ -110,7 +111,7 @@ class Lexer():
                 self.tokens.append(self.get_num())
             elif self.current_char() in WHITESPACE:
                 self.pos.next()
-            elif self.current_char() == "\"":
+            elif self.current_char() == "\"" or (self.current_char() == "}" and self.interpolateception > 0):
                 self.tokens.append(self.get_string())
             elif self.current_char() in RESERVED_CHARS:
                 self.tokens.append(Token(TokenCategory.Symbol, self.current_char(), self.pos))
@@ -144,6 +145,15 @@ class Lexer():
         )
 
     def get_string(self):
+        if self.current_char() == "}" and self.interpolateception > 0:
+            self.interpolateception -= 1
+            self.tokens.append(Token(
+                TokenCategory.Symbol,
+                "interpolclose",
+                self.pos,
+                self.pos
+            ))
+
         start_pos = self.pos.copy()
 
         self.pos.next()
@@ -154,12 +164,35 @@ class Lexer():
             if self.current_char() == "\\":
                 string += self.next_escape()
                 continue
+
+            # implement string interpolation "Hello, ${name}!"
+            if self.current_char() == "$":
+                self.pos.next()
+                if self.current_char() != "{":
+                    string += "$" + self.current_char()
+                    continue
+                else:
+                    self.pos.next()
+                    self.interpolateception += 1
+                    self.tokens.append(Token(
+                        TokenCategory.String,
+                        string,
+                        start_pos,
+                        self.pos
+                    ))
+                    return Token(
+                        TokenCategory.Symbol,
+                        "interpolopen",
+                        self.pos,
+                        self.pos
+                    )
+
             string += self.current_char()
             self.pos.next()
             if not self.pos.in_range() or self.current_char() == "\n":
                 raise UnterminatedStringError(start_pos)
+
             
-            # implement string interpolation "Hello, ${name}!"
         
         self.pos.next()
 
