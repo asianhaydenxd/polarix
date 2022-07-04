@@ -13,9 +13,9 @@ NUMBERS = "1234567890"
 WHITESPACE = "\n\v\t\r "
 
 RESERVED_CHARS = "()[]{},;\"\'"
-RESERVED_OPS = ["=", ":", "|", "->"]
+RESERVED_OPS = ["=", ":", "|", "->", "|=>", "<="]
 
-RESERVED_IDS = ["module", "import", "if", "otherwise", "enum", "struct", "mut", "infix"]
+RESERVED_IDS = ["module", "import", "if", "otherwise", "set", "data", "mut", "infixL", "infixR"]
 
 class LexError(BaseException):
     def __init__(self, name, position):
