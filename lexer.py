@@ -323,7 +323,17 @@ class Lexer():
         start_pos = self.pos.copy()
         
         while self.pos.in_range() and self.current_char() not in RESERVED_CHARS and category(self.current_char()).replace("N","L").replace("S", "P")[0] == unicode_category.replace("S", "P")[0]:
-            self.pos.next()
+            if self.current_char() == ".":
+                self.pos.next()
+                if category(self.current_char()).startswith("L"):
+                    return Token(
+                        TokenCategory.Symbol, 
+                        "dotaccess", 
+                        start_pos, 
+                        self.pos
+                    )
+            else:
+                self.pos.next()
 
         return Token(
             TokenCategory.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else TokenCategory.Identifier, 
