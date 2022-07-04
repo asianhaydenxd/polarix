@@ -104,7 +104,10 @@ class Lexer():
         self.lex()
 
     def current_char(self) -> chr:
-        return self.code[self.pos.index]
+        try:
+            return self.code[self.pos.index]
+        except IndexError:
+            return None
     
     def lex(self) -> List[Token]:
         while self.pos.index < len(self.code):
