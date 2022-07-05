@@ -115,7 +115,7 @@ class Lexer():
     def lex(self) -> List[Token]:
         while self.pos.index < len(self.code):
             if self.current_char() in NUMBERS:
-                self.tokens.append(self.get_num())
+                self.get_num()
             elif self.current_char() in "\n":
                 if len(self.tokens) > 0:
                     if self.tokens[-1].category == TokenCategory.Symbol and self.tokens[-1].name == "\\":
@@ -127,14 +127,14 @@ class Lexer():
             elif self.current_char() in WHITESPACE:
                 self.pos.next()
             elif self.current_char() == "\"" or (self.current_char() == "}" and self.interpolateception > 0):
-                self.tokens.append(self.get_string())
+                self.get_string()
             elif self.current_char() == "\'":
-                self.tokens.append(self.get_char())
+                self.get_char()
             elif self.current_char() in RESERVED_CHARS:
                 self.tokens.append(Token(TokenCategory.Symbol, self.current_char(), self.pos))
                 self.pos.next()
             else:
-                self.tokens.append(self.get_word())
+                self.get_word()
         self.tokens.append(Token(TokenCategory.EndOfFile, start=self.pos))
         return self.tokens
 
@@ -155,12 +155,12 @@ class Lexer():
         
         if last_dot: raise TerminatingNumericalDotError(self.pos.copy())
 
-        return Token(
+        self.tokens.append(Token(
             TokenCategory.Number,
             self.code[start_pos.index : self.pos.index],
             start_pos,
             self.pos
-        )
+        ))
 
     def get_string(self):
         if self.current_char() == "}" and self.interpolateception > 0:
@@ -198,12 +198,13 @@ class Lexer():
                         start_pos,
                         self.pos
                     ))
-                    return Token(
+                    self.tokens.append(Token(
                         TokenCategory.Symbol,
                         "interpolopen",
                         self.pos,
                         self.pos
-                    )
+                    ))
+                    return
 
             string += self.current_char()
             self.pos.next()
@@ -212,12 +213,12 @@ class Lexer():
 
         self.pos.next()
 
-        return Token(
+        self.tokens.append(Token(
             TokenCategory.String, 
             string, 
             start_pos, 
             self.pos
-        )
+        ))
 
     def get_char(self):
         start_pos = self.pos.copy()
@@ -235,12 +236,12 @@ class Lexer():
         
         self.pos.next()
 
-        return Token(
+        self.tokens.append(Token(
             TokenCategory.Character,
             char,
             start_pos,
             self.pos
-        )
+        ))
 
     def next_escape(self, delimiter="\""):
         # String/char escaping
@@ -337,12 +338,13 @@ class Lexer():
                 last_pos = self.pos.copy()
                 self.pos.next()
                 if category(self.current_char()).startswith("L"):
-                    return Token(
+                    self.tokens.append(Token(
                         TokenCategory.Symbol, 
                         "dotaccess", 
                         start_pos, 
                         self.pos
-                    )
+                    ))
+                    return
                 if category(self.current_char()) == "Nd":
                     self.pos = last_pos
                     return self.get_num()
@@ -364,9 +366,9 @@ class Lexer():
                     self.pos.next()
                 return
 
-        return Token(
+        self.tokens.append(Token(
             TokenCategory.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else TokenCategory.Identifier, 
             self.code[start_pos.index : self.pos.index], 
             start_pos, 
             self.pos
-        )
+        ))
