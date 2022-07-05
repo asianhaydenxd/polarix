@@ -81,6 +81,8 @@ class Token:
         self.category = category
         self.name = name
 
+        self.tup = (self.category, self.name)
+
         if start:
             self.start = start.copy()
 
