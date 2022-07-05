@@ -334,6 +334,7 @@ class Lexer():
         
         while self.pos.in_range() and self.current_char() not in RESERVED_CHARS and category(self.current_char()).replace("N","L").replace("S", "P")[0] == unicode_category.replace("S", "P")[0]:
             if self.current_char() == ".":
+                last_pos = self.pos.copy()
                 self.pos.next()
                 if category(self.current_char()).startswith("L"):
                     return Token(
@@ -342,6 +343,9 @@ class Lexer():
                         start_pos, 
                         self.pos
                     )
+                if category(self.current_char()) == "Nd":
+                    self.pos = last_pos
+                    return self.get_num()
             else:
                 self.pos.next()
 
