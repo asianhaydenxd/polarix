@@ -1,11 +1,10 @@
 # Parse Errors
 
 class ParseError:
-    def __init__(self, name, token):
-        self.name = name
+    def __init__(self, token):
         self.token = token
 
-class UnhoistedModuleError(ParseError):
+class NoModuleHeaderError(ParseError):
     def __init__(self, token):
         super().__init__(token)
 
