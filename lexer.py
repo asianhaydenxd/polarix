@@ -338,12 +338,7 @@ class Lexer():
                 last_pos = self.pos.copy()
                 self.pos.next()
                 if category(self.current_char()).startswith("L"):
-                    self.tokens.append(Token(
-                        TokenCategory.Symbol, 
-                        "dotaccess", 
-                        start_pos, 
-                        self.pos
-                    ))
+                    self.tokens.append(Token(TokenCategory.Symbol, "dotaccess", start_pos, self.pos))
                     return
                 if category(self.current_char()) == "Nd":
                     self.pos = last_pos
@@ -362,7 +357,9 @@ class Lexer():
                     if self.current_char() == "*":
                         self.pos.next()
                         if self.pos.in_range():
-                            if self.current_char() == "/": break
+                            if self.current_char() == "/":
+                                self.pos.next()
+                                break
                     self.pos.next()
                 return
 
