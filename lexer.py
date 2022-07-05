@@ -349,6 +349,21 @@ class Lexer():
             else:
                 self.pos.next()
 
+            # Comments!
+            if self.code[start_pos.index : self.pos.index] == "//":
+                while self.pos.in_range() and self.current_char() != "\n":
+                    self.pos.next()
+                return
+            
+            if self.code[start_pos.index : self.pos.index] == "/*":
+                while self.pos.in_range():
+                    if self.current_char() == "*":
+                        self.pos.next()
+                        if self.pos.in_range():
+                            if self.current_char() == "/": break
+                    self.pos.next()
+                return
+
         return Token(
             TokenCategory.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else TokenCategory.Identifier, 
             self.code[start_pos.index : self.pos.index], 
