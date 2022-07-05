@@ -1,3 +1,16 @@
+# Parse Errors
+
+class ParseError:
+    def __init__(self, name, token):
+        self.name = name
+        self.token = token
+
+class UnhoistedModuleError(ParseError):
+    def __init__(self, token):
+        super().__init__(token)
+
+# Nodes
+
 class ModuleNode:
     def __init__(self, name, decls):
         self.name = name
