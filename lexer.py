@@ -74,8 +74,10 @@ class TokenCategory(Enum):
     Indent     = auto()
     EndOfFile  = auto()
 
+TC = TokenCategory
+
 class Token:
-    def __init__(self, category: TokenCategory, name: any = None, start: Position = None, end: Position = None) -> None:
+    def __init__(self, category: TC, name: any = None, start: Position = None, end: Position = None) -> None:
         self.category = category
         self.name = name
 
@@ -89,14 +91,14 @@ class Token:
     
     def __str__(self) -> str:
         match self.category:
-            case TokenCategory.Symbol: category = "sym"
-            case TokenCategory.Identifier: category = "id"
-            case TokenCategory.String: category = "str"
-            case TokenCategory.Character: category = "chr"
-            case TokenCategory.Number: category = "num"
-            case TokenCategory.NewLine: category = "newline"
-            case TokenCategory.Indent: category = "indent"
-            case TokenCategory.EndOfFile: category = "eof"
+            case TC.Symbol: category = "sym"
+            case TC.Identifier: category = "id"
+            case TC.String: category = "str"
+            case TC.Character: category = "chr"
+            case TC.Number: category = "num"
+            case TC.NewLine: category = "newline"
+            case TC.Indent: category = "indent"
+            case TC.EndOfFile: category = "eof"
 
         return f"[{category}: {self.name}]" if self.name is not None else f"[{category}]"
 
@@ -120,15 +122,15 @@ class Lexer():
                 self.get_num()
             elif self.current_char() in "\n":
                 if len(self.tokens) > 0:
-                    if self.tokens[-1].category == TokenCategory.Symbol and self.tokens[-1].name == "\\":
+                    if self.tokens[-1].category == TC.Symbol and self.tokens[-1].name == "\\":
                         self.tokens.pop()
                         self.pos.next()
                         continue
-                self.tokens.append(Token(TokenCategory.NewLine, start=self.pos))
+                self.tokens.append(Token(TC.NewLine, start=self.pos))
                 self.pos.next()
                 if self.pos.in_range():
                     if self.current_char() in " \t":
-                        self.tokens.append(Token(TokenCategory.Indent, start=self.pos))
+                        self.tokens.append(Token(TC.Indent, start=self.pos))
             elif self.current_char() in WHITESPACE:
                 self.pos.next()
             elif self.current_char() == "\"" or (self.current_char() == "}" and self.interpolateception > 0):
@@ -136,11 +138,11 @@ class Lexer():
             elif self.current_char() == "\'":
                 self.get_char()
             elif self.current_char() in RESERVED_CHARS:
-                self.tokens.append(Token(TokenCategory.Symbol, self.current_char(), self.pos))
+                self.tokens.append(Token(TC.Symbol, self.current_char(), self.pos))
                 self.pos.next()
             else:
                 self.get_word()
-        self.tokens.append(Token(TokenCategory.EndOfFile, start=self.pos))
+        self.tokens.append(Token(TC.EndOfFile, start=self.pos))
         return self.tokens
 
     def get_num(self):
@@ -161,7 +163,7 @@ class Lexer():
         if last_dot: raise TerminatingNumericalDotError(self.pos.copy())
 
         self.tokens.append(Token(
-            TokenCategory.Number,
+            TC.Number,
             self.code[start_pos.index : self.pos.index],
             start_pos,
             self.pos
@@ -171,7 +173,7 @@ class Lexer():
         if self.current_char() == "}" and self.interpolateception > 0:
             self.interpolateception -= 1
             self.tokens.append(Token(
-                TokenCategory.Symbol,
+                TC.Symbol,
                 "interpolclose",
                 self.pos,
                 self.pos
@@ -198,13 +200,13 @@ class Lexer():
                     self.pos.next()
                     self.interpolateception += 1
                     self.tokens.append(Token(
-                        TokenCategory.String,
+                        TC.String,
                         string,
                         start_pos,
                         self.pos
                     ))
                     self.tokens.append(Token(
-                        TokenCategory.Symbol,
+                        TC.Symbol,
                         "interpolopen",
                         self.pos,
                         self.pos
@@ -219,7 +221,7 @@ class Lexer():
         self.pos.next()
 
         self.tokens.append(Token(
-            TokenCategory.String, 
+            TC.String, 
             string, 
             start_pos, 
             self.pos
@@ -242,7 +244,7 @@ class Lexer():
         self.pos.next()
 
         self.tokens.append(Token(
-            TokenCategory.Character,
+            TC.Character,
             char,
             start_pos,
             self.pos
@@ -343,7 +345,7 @@ class Lexer():
                 last_pos = self.pos.copy()
                 self.pos.next()
                 if category(self.current_char()).startswith("L"):
-                    self.tokens.append(Token(TokenCategory.Symbol, "dotaccess", start_pos, self.pos))
+                    self.tokens.append(Token(TC.Symbol, "dotaccess", start_pos, self.pos))
                     return
                 if category(self.current_char()) == "Nd":
                     self.pos = last_pos
@@ -369,7 +371,7 @@ class Lexer():
                 return
 
         self.tokens.append(Token(
-            TokenCategory.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else TokenCategory.Identifier, 
+            TC.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else TC.Identifier, 
             self.code[start_pos.index : self.pos.index], 
             start_pos, 
             self.pos
