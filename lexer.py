@@ -121,7 +121,7 @@ class Lexer():
                     if self.tokens[-1].category == TokenCategory.Symbol and self.tokens[-1].name == "\\":
                         self.tokens.pop()
                         self.pos.next()
-                    continue
+                        continue
                 self.tokens.append(Token(TokenCategory.NewLine, start=self.pos))
                 self.pos.next()
             elif self.current_char() in WHITESPACE:
