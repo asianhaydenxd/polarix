@@ -30,6 +30,14 @@ class InvalidImportDeclarationError(ParseError):
     def __init__(self, token):
         super().__init__(token)
 
+class UnexpectedIndentError(ParseError):
+    def __init__(self, token):
+        super().__init__(token)
+
+class DeclarationExpectedError(ParseError):
+    def __init__(self, token):
+        super().__init__(token)
+
 # Nodes
 
 class ModuleNode:
@@ -55,6 +63,18 @@ class DefinitionNode:
         self.match_node = match_node
         self.func_node = func_node
 
+
+class FactorIdNode:
+    def __init__(self, id):
+        self.id = id
+
+class FunctionNode:
+    def __init__(self, id, arg):
+        self.id = id
+        self.arg = arg
+
+# Parser
+
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -75,11 +95,66 @@ class Parser:
 
         module = ModuleNode(name, exports, imports, [])
 
-        # while self.current_token().category != TC.EndOfFile:
-        #     decl, err = self.get_decl()
-        #     self.advance()
+        while self.current_token().category != TC.EndOfFile:
+            decl, err = self.get_decl()
+            if err is not None: return None, err
+            if decl is not None: module.decls.append(decl)
+            self.advance()
         
         return module
+    
+    def get_decl(self):
+        if self.current_token().tup == (TC.NewLine, None):
+            return None, None
+        if self.current_token().tup == (TC.Indent, None):
+            return None, UnexpectedIndentError()
+        if self.current_token().category == TC.Identifier:
+            return self.get_function()
+        if self.current_token().tup == (TC.Symbol, "data"):
+            return self.get_data()
+        return None, DeclarationExpectedError()
+    
+    def get_function(self):
+        self.advance()
+        if self.current_token().tup == (TC.Symbol, ":"):
+            return
+        if self.current_token().tup == (TC.Symbol, "="): # Change to take in pattern matching
+            self.advance()
+            return self.parse_function()
+    
+    def parse_function(self):
+        self.expr()
+    
+    def expr(self):
+        return self.function_op() # change to bin_op when done
+    
+    def bin_op(self):
+        left, err = self.function_op()
+        self.advance()
+        # ????
+
+    def function_op(self):
+        init, err = self.factor()
+        self.advance()
+        arg, err = self.factor()
+        if arg is None: return init
+        return FunctionNode(init, arg)
+
+    def factor(self):
+        if self.current_token() == "(":
+            expr, err = self.expr()
+            if self.current_token() == ")":
+                self.next()
+            if err is not None: return None, err
+            return expr, None
+        
+        if self.current_token().category == TC.Identifier:
+            return FactorIdNode(self.current_token().name)
+
+        return None, None
+
+    def get_data(self):
+        pass
     
     def find_mod_header(self):
         # Find module header token
@@ -178,10 +253,12 @@ if __name__ == "__main__":
     import lexer
     module = Parser(lexer.Lexer("""
 
-module Main
+module Main (a, b, c)
 
-import StdIO as IO
+import StdIO as IO (a, b, c)
+
+main = println "hello!!!"
 
     """).tokens).module
 
-    print(module.imports[0].ids)
+    print(module.decls)
