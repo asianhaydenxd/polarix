@@ -15,7 +15,7 @@ WHITESPACE = "\n\v\t\r "
 RESERVED_CHARS = "()[]{},;\"\'"
 RESERVED_OPS = ["=", ":", "|", "->", "|=>", "<=", "\\"]
 
-RESERVED_IDS = ["module", "import", "if", "otherwise", "set", "data", "mut", "infixL", "infixR"]
+RESERVED_IDS = ["module", "import", "as", "if", "otherwise", "set", "data", "mut", "infixL", "infixR"]
 
 class LexError(BaseException):
     def __init__(self, name, position):
