@@ -67,6 +67,7 @@ class Position:
 class TokenCategory(Enum):
     Symbol     = auto()
     Identifier = auto()
+    Operator   = auto()
     String     = auto()
     Character  = auto()
     Number     = auto()
@@ -95,6 +96,7 @@ class Token:
         match self.category:
             case TC.Symbol: category = "sym"
             case TC.Identifier: category = "id"
+            case TC.Operator: category = "op"
             case TC.String: category = "str"
             case TC.Character: category = "chr"
             case TC.Number: category = "num"
@@ -373,7 +375,9 @@ class Lexer():
                 return
 
         self.tokens.append(Token(
-            TC.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else TC.Identifier, 
+            TC.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else
+                TC.Operator if unicode_category[0] in "SP" else
+                TC.Identifier,
             self.code[start_pos.index : self.pos.index], 
             start_pos, 
             self.pos
