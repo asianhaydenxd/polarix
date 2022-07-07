@@ -357,6 +357,20 @@ class Lexer():
                 return self.get_num()
             self.pos = last_pos
 
+        # Function to infix
+        if self.current_char() == "<":
+            last_pos = self.pos.copy()
+            self.pos.next()
+            if not category(self.current_char()).startswith("SP"):
+                self.get_id()
+                if self.current_char() == ">":
+                    self.pos.next()
+                    id_token = self.tokens.pop()
+                    self.tokens.append(Token(TC.Operator, id_token.name, start_pos, self.pos))
+                    return
+                self.tokens.pop()
+            self.pos = last_pos
+
         while self.pos.in_range() and self.current_char() not in RESERVED_CHARS and category(self.current_char())[0] in "SP":
             string += self.current_char()
             self.pos.next()
