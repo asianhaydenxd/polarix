@@ -144,8 +144,10 @@ class Lexer():
             elif self.current_char() in RESERVED_CHARS:
                 self.tokens.append(Token(TC.Symbol, self.current_char(), self.pos))
                 self.pos.next()
+            elif category(self.current_char())[0] in "SP":
+                self.get_op()
             else:
-                self.get_word()
+                self.get_id()
         self.tokens.append(Token(TC.EndOfFile, start=self.pos))
         return self.tokens
 
@@ -340,30 +342,32 @@ class Lexer():
 
         return new_string
 
-    def get_word(self):
-        unicode_category = category(self.current_char())
+    def get_op(self):
         start_pos = self.pos.copy()
-        
-        while self.pos.in_range() and self.current_char() not in RESERVED_CHARS and category(self.current_char()).replace("N","L").replace("S", "P")[0] == unicode_category.replace("S", "P")[0]:
-            if self.current_char() == ".":
-                last_pos = self.pos.copy()
-                self.pos.next()
-                if category(self.current_char()).startswith("L"):
-                    self.tokens.append(Token(TC.Symbol, "dotaccess", start_pos, self.pos))
-                    return
-                if category(self.current_char()) == "Nd":
-                    self.pos = last_pos
-                    return self.get_num()
-            else:
-                self.pos.next()
+        string = ""
 
+        if self.current_char() == ".":
+            last_pos = self.pos.copy()
+            self.pos.next()
+            if category(self.current_char()).startswith("L"):
+                self.tokens.append(Token(TC.Symbol, "dotaccess", start_pos, self.pos))
+                return
+            if category(self.current_char()) == "Nd":
+                self.pos = last_pos
+                return self.get_num()
+            self.pos = last_pos
+
+        while self.pos.in_range() and self.current_char() not in RESERVED_CHARS and category(self.current_char())[0] in "SP":
+            string += self.current_char()
+            self.pos.next()
+            
             # Comments!
-            if self.code[start_pos.index : self.pos.index] == "//":
+            if string == "//":
                 while self.pos.in_range() and self.current_char() != "\n":
                     self.pos.next()
                 return
             
-            if self.code[start_pos.index : self.pos.index] == "/*":
+            if string == "/*":
                 while self.pos.in_range():
                     if self.current_char() == "*":
                         self.pos.next()
@@ -375,10 +379,23 @@ class Lexer():
                 return
 
         self.tokens.append(Token(
-            TC.Symbol if self.code[start_pos.index : self.pos.index] in RESERVED_IDS + RESERVED_OPS else
-                TC.Operator if unicode_category[0] in "SP" else
-                TC.Identifier,
-            self.code[start_pos.index : self.pos.index], 
+            TC.Symbol if string in RESERVED_OPS else TC.Operator,
+            string,
+            start_pos, 
+            self.pos
+        ))
+
+    def get_id(self):
+        start_pos = self.pos.copy()
+        string = ""
+        
+        while self.pos.in_range() and self.current_char() not in RESERVED_CHARS and category(self.current_char())[0] in "LN":
+            string += self.current_char()
+            self.pos.next()
+
+        self.tokens.append(Token(
+            TC.Symbol if string in RESERVED_IDS else TC.Identifier,
+            string,
             start_pos, 
             self.pos
         ))
