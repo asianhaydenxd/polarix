@@ -1,4 +1,4 @@
-from lexer import TC
+from lexer import TC, Token
 
 # TODO:
 #  - Implement tuples
@@ -120,7 +120,7 @@ class Parser:
             if decl is not None: module.decls.append(decl)
             self.advance()
         
-        return module
+        return module, None
     
     def get_decl(self):
         if self.current_token().tup == (TC.NewLine, None):
@@ -294,7 +294,7 @@ def printmodule(module):
         print(printdecl(decl, 2))
 
 def printdecl(decl, indent):
-    if type(decl) == lexer.Token:
+    if type(decl) == Token:
         return " " * (indent*2) + str(decl) + "\n"
     if type(decl) == FactorIdNode:
         return " " * (indent*2) + str(decl.id) + "\n"
@@ -305,21 +305,3 @@ def printdecl(decl, indent):
         return " " * (indent*2) + "name:\n" + printdecl(decl.name, indent+1) \
              + " " * (indent*2) + "left:\n" + printdecl(decl.left, indent+1) \
              + " " * (indent*2) + "right:\n" + printdecl(decl.right, indent+1)
-
-if __name__ == "__main__":
-    import lexer
-    tokens = lexer.Lexer("""
-
-module Main (a, b, c)
-
-import StdIO as IO (a, b, c)
-
-main = 5 a
-
-    """).tokens
-
-    # print([str(token) for token in tokens])
-
-    module = Parser(tokens).module
-
-    print(module.decls[0].id)
