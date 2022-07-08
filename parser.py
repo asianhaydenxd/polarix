@@ -57,6 +57,10 @@ class UnfinishedMatrixError(ParseError):
     def __init__(self, token):
         super().__init__(token)
 
+class UnbalancedMatrixError(ParseError):
+    def __init__(self, token):
+        super().__init__(token)
+
 # Nodes
 
 class ModuleNode:
@@ -223,7 +227,10 @@ class Parser:
                 self.advance()
                 expr, err = self.parse_function()
                 exprs.append(expr)
-            return MatrixNode([row.members if type(row) == TupleNode else [row] for row in exprs]), err
+            matrix = [row.members if type(row) == TupleNode else [row] for row in exprs]
+            if len(set(map(len,matrix))) != 1:
+                return None, UnbalancedMatrixError(self.current_token())
+            return MatrixNode(matrix), err
         
         if self.current_token().category in [TC.Identifier, TC.String, TC.Character, TC.Number]:
             tok = self.current_token()
