@@ -1,7 +1,6 @@
 from lexer import TC, Token
 
 # TODO:
-#  - Implement tuples
 #  - Implement matrices [] and lists {}
 #  - Turn operator without args (i.e. "(+)") into a function
 #  - Turn operator with only 1 arg (i.e. "(1 +)" or "(+ 1)") into a function
@@ -92,6 +91,10 @@ class BinaryOperatorNode:
         self.left = left
         self.right = right
 
+class TupleNode:
+    def __init__(self, members):
+        self.members = members
+
 # Parser
 
 class Parser:
@@ -146,7 +149,18 @@ class Parser:
             return self.parse_function()
     
     def parse_function(self):
-        return self.bin_op()
+        return self.tup_op()
+
+    def tup_op(self):
+        left, err = self.bin_op()
+        if self.current_token().tup != (TC.Symbol, ","):
+            return left, err
+        left = [left]
+        while self.current_token().tup == (TC.Symbol, ","):
+            self.advance()
+            right, err = self.bin_op()
+            left.append(right)
+        return TupleNode(left), err
     
     def bin_op(self, precedence=0):
         left, err = self.function_op() if precedence == 0 else self.bin_op(precedence-1)
@@ -305,3 +319,5 @@ def printdecl(decl, indent):
         return " " * (indent*2) + "name:\n" + printdecl(decl.name, indent+1) \
              + " " * (indent*2) + "left:\n" + printdecl(decl.left, indent+1) \
              + " " * (indent*2) + "right:\n" + printdecl(decl.right, indent+1)
+    if type(decl) == TupleNode:
+        return " " * (indent*2) + "members:\n" + "".join([printdecl(member, indent+1) for member in decl.members])
