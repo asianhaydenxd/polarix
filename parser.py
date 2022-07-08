@@ -191,10 +191,13 @@ class Parser:
         return left, err
 
     def function_op(self):
-        init, err = self.factor()
-        arg, err = self.factor()
-        if arg is None or init.id.category != TC.Identifier: return init, err
-        return FunctionNode(init, arg), err
+        left, err = self.factor()
+        while self.current_token().category != TC.Operator:
+            if hasattr(left, "id") and left.id.category != TC.Identifier: return left, err
+            right, err = self.factor()
+            if right is None: return left, err
+            left = FunctionNode(left, right)
+        return left, err
 
     def factor(self):
         if self.current_token().tup == (TC.Symbol, "("):
