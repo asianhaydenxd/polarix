@@ -73,6 +73,12 @@ class FunctionNode:
         self.name = name
         self.arg = arg
 
+class BinaryOperatorNode:
+    def __init__(self, name, left, right):
+        self.name = name
+        self.left = left
+        self.right = right
+
 # Parser
 
 class Parser:
@@ -127,33 +133,36 @@ class Parser:
             return self.parse_function()
     
     def parse_function(self):
-        return self.expr()
+        return self.bin_op()
     
-    def expr(self):
-        return self.function_op() # change to bin_op when done
-    
-    def bin_op(self):
-        left, err = self.function_op()
-        self.advance()
-        # ????
+    def bin_op(self, precedence=0):
+        left, err = self.function_op() if precedence == 0 else self.bin_op(precedence-1)
+        if self.current_token().category == TC.Operator:
+            optoken = self.current_token()
+            self.advance()
+            right, err = self.function_op() if precedence == 0 else self.bin_op(precedence-1)
+            left = BinaryOperatorNode(optoken, left, right)
+        return left, err
 
     def function_op(self):
         init, err = self.factor()
-        self.advance()
         arg, err = self.factor()
-        if arg is None: return init, err
+        if arg is None or init.id.category != TC.Identifier: return init, err
         return FunctionNode(init, arg), err
 
     def factor(self):
-        if self.current_token() == "(":
-            expr, err = self.expr()
-            if self.current_token() == ")":
-                self.next()
+        if self.current_token().tup == (TC.Symbol, "("):
+            self.advance()
+            expr, err = self.parse_function()
+            if self.current_token().tup == (TC.Symbol, ")"):
+                self.advance()
             if err is not None: return None, err
             return expr, None
         
         if self.current_token().category in [TC.Identifier, TC.String, TC.Character, TC.Number]:
-            return FactorIdNode(self.current_token()), None
+            tok = self.current_token()
+            self.advance()
+            return FactorIdNode(tok), None
 
         return None, None
 
@@ -261,7 +270,7 @@ module Main (a, b, c)
 
 import StdIO as IO (a, b, c)
 
-main = println "hello!!!"
+main = 5 a
 
     """).tokens
 
@@ -269,4 +278,4 @@ main = println "hello!!!"
 
     module = Parser(tokens).module
 
-    print(module.decls[0].name.id)
+    print(module.decls[0].id)
