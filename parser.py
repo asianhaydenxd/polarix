@@ -1,5 +1,18 @@
 from lexer import TC
 
+# TODO:
+#  - Implement tuples
+#  - Implement matrices [] and lists {}
+#  - Turn operator without args (i.e. "(+)") into a function
+#  - Turn operator with only 1 arg (i.e. "(1 +)" or "(+ 1)") into a function
+#  - Implement |=> anonymous function operator
+#  - Implement pattern matching before = sign (for params and for more complex pattern matching)
+#  - Parse function declarations
+#  - To get infix precedences, check their declaration (look in file and in imports)
+#  - Maybe allow infix declarations for regular ids for use without <> brackets?
+#  - Implement data (and type, i.e. type synonym) keywords
+#  - Parse imperative code
+
 # Parse Errors
 
 class ParseError:
