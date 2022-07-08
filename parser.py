@@ -262,6 +262,37 @@ class Parser:
     #     else:
     #         pass
 
+def printmodule(module):
+    print(f"- name: {module.name}")
+    print("  exports:")
+    for exported in module.exports:
+        print(f"  - {exported}")
+    print("  imports:")
+    for imported in module.imports:
+        print(f"  - {imported.alias}")
+        if imported.alias != imported.module:
+            print(f"    name: {imported.module}")
+        if imported.ids:
+            print("    ids:")
+        for id in imported.ids:
+            print(f"     - {id}")
+    print(f"  declarations:")
+    for decl in module.decls:
+        print(printdecl(decl, 2))
+
+def printdecl(decl, indent):
+    if type(decl) == lexer.Token:
+        return " " * (indent*2) + str(decl) + "\n"
+    if type(decl) == FactorIdNode:
+        return " " * (indent*2) + str(decl.id) + "\n"
+    if type(decl) == FunctionNode:
+        return " " * (indent*2) + "name:\n" + printdecl(decl.name, indent+1) \
+             + " " * (indent*2) + "arg:\n" + printdecl(decl.arg, indent+1)
+    if type(decl) == BinaryOperatorNode:
+        return " " * (indent*2) + "name:\n" + printdecl(decl.name, indent+1) \
+             + " " * (indent*2) + "left:\n" + printdecl(decl.left, indent+1) \
+             + " " * (indent*2) + "right:\n" + printdecl(decl.right, indent+1)
+
 if __name__ == "__main__":
     import lexer
     tokens = lexer.Lexer("""
