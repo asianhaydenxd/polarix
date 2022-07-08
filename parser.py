@@ -1,10 +1,11 @@
+from pyclbr import Function
 from lexer import TC, Token
 
 # TODO:
+#  - Implement pattern matching before = sign (for params and for more complex pattern matching)
 #  - Turn operator without args (i.e. "(+)") into a function
 #  - Turn operator with only 1 arg (i.e. "(1 +)" or "(+ 1)") into a function
 #  - Implement |=> anonymous function operator
-#  - Implement pattern matching before = sign (for params and for more complex pattern matching)
 #  - Parse function declarations
 #  - To get infix precedences, check their declaration (look in file and in imports)
 #  - Maybe allow infix declarations for regular ids for use without <> brackets?
@@ -46,6 +47,10 @@ class UnexpectedIndentError(ParseError):
         super().__init__(token)
 
 class DeclarationExpectedError(ParseError):
+    def __init__(self, token):
+        super().__init__(token)
+
+class MatchOpExpectedError(ParseError):
     def __init__(self, token):
         super().__init__(token)
 
@@ -163,9 +168,20 @@ class Parser:
         self.advance()
         if self.current_token().tup == (TC.Symbol, ":"):
             return
-        if self.current_token().tup == (TC.Symbol, "="): # Change to take in pattern matching
-            self.advance()
-            return self.parse_function()
+        
+        self.index -= 1
+
+        match, err = self.parse_function()
+        if err is not None: return None, err
+
+        if self.current_token().tup != (TC.Symbol, "="):
+            return None, MatchOpExpectedError(self.current_token())
+
+        self.advance()
+        func, err = self.parse_function()
+        if err is not None: return None, err
+
+        return DefinitionNode(match, func), None
     
     def parse_function(self):
         return self.tup_op()
@@ -354,7 +370,8 @@ def printmodule(module):
             print(f"     - {id}")
     print(f"  declarations:")
     for decl in module.decls:
-        print(printdecl(decl, 2))
+        print(printdecl(decl.match_node, 2))
+        print(printdecl(decl.func_node, 2))
 
 def printdecl(decl, indent):
     if type(decl) == Token:
