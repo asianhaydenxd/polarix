@@ -94,6 +94,14 @@ class BinaryOperatorNode:
 class TupleNode:
     def __init__(self, members):
         self.members = members
+        
+# class MatrixNode:
+#     def __init__(self, matrix):
+#         self.matrix = matrix
+
+class ListNode:
+    def __init__(self, seq):
+        self.list = seq
 
 # Parser
 
@@ -185,6 +193,16 @@ class Parser:
                 self.advance()
             if err is not None: return None, err
             return expr, None
+        
+        # List
+        if self.current_token().tup == (TC.Symbol, "{"):
+            self.advance()
+            expr, err = self.parse_function()
+            if self.current_token().tup == (TC.Symbol, "}"):
+                self.advance()
+            if err is not None: return None, err
+            # Turn tuple (or single element) into list
+            return (ListNode(expr.members if type(expr) == TupleNode else [expr])), None
         
         if self.current_token().category in [TC.Identifier, TC.String, TC.Character, TC.Number]:
             tok = self.current_token()
@@ -321,3 +339,5 @@ def printdecl(decl, indent):
              + " " * (indent*2) + "right:\n" + printdecl(decl.right, indent+1)
     if type(decl) == TupleNode:
         return " " * (indent*2) + "members:\n" + "".join([printdecl(member, indent+1) for member in decl.members])
+    if type(decl) == ListNode:
+        return " " * (indent*2) + "list members:\n" + "".join([printdecl(member, indent+1) for member in decl.list])
