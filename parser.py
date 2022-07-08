@@ -1,7 +1,6 @@
 from lexer import TC, Token
 
 # TODO:
-#  - Implement matrices [] and lists {}
 #  - Turn operator without args (i.e. "(+)") into a function
 #  - Turn operator with only 1 arg (i.e. "(1 +)" or "(+ 1)") into a function
 #  - Implement |=> anonymous function operator
@@ -50,6 +49,14 @@ class DeclarationExpectedError(ParseError):
     def __init__(self, token):
         super().__init__(token)
 
+class UnfinishedListError(ParseError):
+    def __init__(self, token):
+        super().__init__(token)
+
+class UnfinishedMatrixError(ParseError):
+    def __init__(self, token):
+        super().__init__(token)
+
 # Nodes
 
 class ModuleNode:
@@ -95,9 +102,9 @@ class TupleNode:
     def __init__(self, members):
         self.members = members
         
-# class MatrixNode:
-#     def __init__(self, matrix):
-#         self.matrix = matrix
+class MatrixNode:
+    def __init__(self, matrix):
+        self.matrix = matrix
 
 class ListNode:
     def __init__(self, seq):
@@ -198,11 +205,25 @@ class Parser:
         if self.current_token().tup == (TC.Symbol, "{"):
             self.advance()
             expr, err = self.parse_function()
-            if self.current_token().tup == (TC.Symbol, "}"):
-                self.advance()
+            if self.current_token().tup != (TC.Symbol, "}"):
+                return None, UnfinishedListError(self.current_token())
+            self.advance()
             if err is not None: return None, err
             # Turn tuple (or single element) into list
-            return (ListNode(expr.members if type(expr) == TupleNode else [expr])), None
+            return (ListNode(expr.members if type(expr) == TupleNode else [expr])), err
+        
+        # Matrix
+        if self.current_token().tup == (TC.Symbol, "["):
+            self.advance()
+            expr, err = self.parse_function()
+            exprs = [expr]
+            while self.current_token().tup != (TC.Symbol, "]"):
+                if self.current_token().tup != (TC.Symbol, ";"):
+                    return None, UnfinishedMatrixError(self.current_token())
+                self.advance()
+                expr, err = self.parse_function()
+                exprs.append(expr)
+            return MatrixNode([row.members if type(row) == TupleNode else [row] for row in exprs]), err
         
         if self.current_token().category in [TC.Identifier, TC.String, TC.Character, TC.Number]:
             tok = self.current_token()
@@ -341,3 +362,6 @@ def printdecl(decl, indent):
         return " " * (indent*2) + "members:\n" + "".join([printdecl(member, indent+1) for member in decl.members])
     if type(decl) == ListNode:
         return " " * (indent*2) + "list members:\n" + "".join([printdecl(member, indent+1) for member in decl.list])
+    if type(decl) == MatrixNode:
+        return " " * (indent*2) + "matrix members:\n" + " " * ((indent+1)*2) + "row:\n" + (" " * ((indent+1)*2) + "row:\n").join(["".join([printdecl(member, indent+2) for member in row]) for row in decl.matrix])
+    raise Exception(f"No defined print specifications for {type(decl)}")
