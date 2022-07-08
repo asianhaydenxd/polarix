@@ -69,8 +69,8 @@ class FactorIdNode:
         self.id = id
 
 class FunctionNode:
-    def __init__(self, id, arg):
-        self.id = id
+    def __init__(self, name, arg):
+        self.name = name
         self.arg = arg
 
 # Parser
@@ -116,7 +116,7 @@ class Parser:
             return self.get_function()
         if self.current_token().tup == (TC.Symbol, "data"):
             return self.get_data()
-        return None, DeclarationExpectedError()
+        return None, DeclarationExpectedError(self.current_token())
     
     def get_function(self):
         self.advance()
@@ -127,7 +127,7 @@ class Parser:
             return self.parse_function()
     
     def parse_function(self):
-        self.expr()
+        return self.expr()
     
     def expr(self):
         return self.function_op() # change to bin_op when done
@@ -141,8 +141,8 @@ class Parser:
         init, err = self.factor()
         self.advance()
         arg, err = self.factor()
-        if arg is None: return init
-        return FunctionNode(init, arg)
+        if arg is None: return init, err
+        return FunctionNode(init, arg), err
 
     def factor(self):
         if self.current_token() == "(":
@@ -152,8 +152,8 @@ class Parser:
             if err is not None: return None, err
             return expr, None
         
-        if self.current_token().category == TC.Identifier:
-            return FactorIdNode(self.current_token().name)
+        if self.current_token().category in [TC.Identifier, TC.String, TC.Character, TC.Number]:
+            return FactorIdNode(self.current_token()), None
 
         return None, None
 
@@ -255,7 +255,7 @@ class Parser:
 
 if __name__ == "__main__":
     import lexer
-    module = Parser(lexer.Lexer("""
+    tokens = lexer.Lexer("""
 
 module Main (a, b, c)
 
@@ -263,6 +263,10 @@ import StdIO as IO (a, b, c)
 
 main = println "hello!!!"
 
-    """).tokens).module
+    """).tokens
 
-    print(module.decls)
+    # print([str(token) for token in tokens])
+
+    module = Parser(tokens).module
+
+    print(module.decls[0].name.id)
