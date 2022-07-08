@@ -107,7 +107,11 @@ class Parser:
         if self.current_token().tup == (TC.NewLine, None):
             return None, None
         if self.current_token().tup == (TC.Indent, None):
-            return None, UnexpectedIndentError()
+            self.advance()
+            if self.current_token().tup in [(TC.NewLine, None), (TC.EndOfFile, None)]: # Do nothing if the tabbed line is empty
+                self.index -= 1
+                return None, None
+            return None, UnexpectedIndentError(self.current_token())
         if self.current_token().category == TC.Identifier:
             return self.get_function()
         if self.current_token().tup == (TC.Symbol, "data"):
