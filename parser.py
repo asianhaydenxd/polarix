@@ -87,7 +87,8 @@ class DeclarationNode:
         self.node = node
 
 class DefinitionNode:
-    def __init__(self, match_node, func_node):
+    def __init__(self, name, match_node, func_node):
+        self.name = name
         self.match_node = match_node
         self.func_node = func_node
 
@@ -158,11 +159,9 @@ class Parser:
                 self.index -= 1
                 return None, None
             return None, UnexpectedIndentError(self.current_token())
-        if self.current_token().category == TC.Identifier:
-            return self.get_function()
         if self.current_token().tup == (TC.Symbol, "data"):
             return self.get_data()
-        return None, DeclarationExpectedError(self.current_token())
+        return self.get_function()
     
     def get_function(self):
         self.advance()
@@ -173,6 +172,15 @@ class Parser:
 
         match, err = self.parse_function()
         if err is not None: return None, err
+        
+        name = match.name
+        while type(name) != Token:
+            if hasattr(name, "name"):
+                name = name.name
+            elif hasattr(name, "id"):
+                name = name.id
+        
+        print(name)
 
         if self.current_token().tup != (TC.Symbol, "="):
             return None, MatchOpExpectedError(self.current_token())
@@ -181,7 +189,7 @@ class Parser:
         func, err = self.parse_function()
         if err is not None: return None, err
 
-        return DefinitionNode(match, func), None
+        return DefinitionNode(name, match, func), None
     
     def parse_function(self):
         return self.tup_op()
