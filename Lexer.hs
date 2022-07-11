@@ -59,7 +59,7 @@ symbols = "~`!@#$%^&*()_-+={[}]|\\:;<,>.?/"
 (->:) x (Error err) = Error err
 
 tokenize :: String -> Handled [Token]
-tokenize code = lexer NoState code [] where
+tokenize code = lexer NoState (code++" ") [] where
     lexer :: LexerState -> String -> String -> Handled[Token]
     lexer NoState ('\"':cs) _ = lexer StringState cs []
     lexer NoState ('\'':cs) _ = lexer CharState cs []
@@ -70,17 +70,14 @@ tokenize code = lexer NoState code [] where
         | c `elem` numbers = lexer NumState (c:cs) []
         | c `elem` whitespace = lexer NoState cs []
 
-    lexer WordState (c:[]) s = lexer WordState (c:" ") s
     lexer WordState (c:cs) s
         | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
         | otherwise = IdentifierToken s ->: lexer NoState (c:cs) []
 
-    lexer OpState (c:[]) s = lexer OpState (c:" ") s
     lexer OpState (c:cs) s
         | c `elem` symbols = lexer OpState cs (s ++ [c])
         | otherwise = OperatorToken s ->: lexer NoState (c:cs) []
     
-    lexer NumState (c:[]) s = lexer NumState (c:" ") s
     lexer NumState (c:cs) s
         | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState cs (s ++ [c])
         | otherwise = NumberToken s ->: lexer NoState (c:cs) []
