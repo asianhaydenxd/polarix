@@ -70,12 +70,12 @@ tokenize code = lexer NoState code [] where
         | c `elem` symbols = lexer OpState (c:cs) []
         | c `elem` whitespace = lexer NoState cs []
 
-    lexer WordState [] s = undefined
+    lexer WordState (c:[]) s = lexer WordState (c:" ") s
     lexer WordState (c:cs) s
         | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
         | otherwise = IdentifierToken s ->: lexer NoState (c:cs) []
 
-    lexer OpState [] s = undefined
+    lexer OpState (c:[]) s = lexer OpState (c:" ") s
     lexer OpState (c:cs) s
         | c `elem` symbols = lexer OpState cs (s ++ [c])
         | otherwise = OperatorToken s ->: lexer NoState (c:cs) []
