@@ -44,7 +44,7 @@ infixr ->:
 (->:) x (Error err) = Error err
 
 tokenize :: String -> Handled [Token]
-tokenize code = lexer NoState (code++" ") [] where
+tokenize code = lexer NoState (code ++ " ") [] where
     lexer :: LexerState -> String -> String -> Handled[Token]
     lexer NoState ('\"':cs) _ = lexer StringState cs []
     lexer NoState ('\'':cs) _ = lexer CharState cs []
