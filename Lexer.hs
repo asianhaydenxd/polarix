@@ -34,6 +34,7 @@ letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 numbers = "0123456789"
 symbols = "~`!@#$%^&*()_-+={}[]|\\:;<,>.?/"
 
+word_symbols = "\'_"
 reserved_chars = "()[]{}\"\',"
 
 -- Like cons (:) operator for lists, but for Handled lists and preserves its error state
@@ -54,7 +55,7 @@ tokenize code = lexer NoState (code++" ") [] where
                            | c `elem` numbers        = lexer NumState (c:cs) []
                            | c `elem` whitespace     = lexer NoState cs []
 
-    lexer WordState (c:cs) s | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
+    lexer WordState (c:cs) s | c `elem` (letters ++ numbers ++ word_symbols) = lexer WordState cs (s ++ [c])
                              | otherwise = IdentifierToken s ->: lexer NoState (c:cs) []
 
     lexer OpState (c:cs) s | c `elem` symbols && c `notElem` reserved_chars = lexer OpState cs (s ++ [c])
