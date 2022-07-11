@@ -60,7 +60,6 @@ numbers = "0123456789"
 tokenize :: String -> Handled [Token]
 tokenize code = lexer NoState code [] where
     lexer :: LexerState -> String -> String -> Handled[Token]
-    lexer _ [] _ = Ok [EndOfFile]
     lexer NoState ('\"':cs) _ = lexer StringState cs []
     lexer NoState ('\'':cs) _ = lexer CharState cs []
     lexer NoState ('\n':cs) _ = SymbolToken NewLineSymbol ->: lexer NoState cs []
@@ -68,7 +67,13 @@ tokenize code = lexer NoState code [] where
         | c `elem` letters = lexer WordState (c:cs) []
         | c `elem` numbers = lexer NumState (c:cs) []
         | c `elem` whitespace = lexer NoState cs []
+
+    lexer WordState [] s = undefined
+    lexer WordState (c:cs) s
+        | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
+        | otherwise = IdentifierToken s ->: lexer NoState cs []
     
+    lexer _ [] _ = Ok [EndOfFile]
     lexer _ _ _ = Error UnhandledStateError
 
 -- Implement escape sequences
