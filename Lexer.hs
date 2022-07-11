@@ -2,9 +2,13 @@ module Lexer where
 
 data LexError
     = UnclosedStringError
+    | UnhandledStateError
     deriving Show
 
-data Handled a = Ok a | Error LexError deriving Show
+data Handled a
+    = Ok a
+    | Error LexError
+    deriving Show
 
 data Token
     = SymbolToken Symbol
@@ -14,6 +18,7 @@ data Token
     | CharToken Char
     | NumberToken String
     | EndOfFile
+    deriving Show
     
 data Symbol
     = NewLineSymbol
@@ -34,11 +39,37 @@ data Symbol
     | RightBracketSymbol
     | LeftCurlyBraceSymbol
     | RightCurlyBraceSymbol
+    deriving Show
 
-whitespace = " \n\v\t\f"
+data LexerState
+    = NoState
+    | StringState
+    | CharState
+    | WordState
+    | OpState
+    | NumState
 
-lex :: String -> [Token]
-lex code = undefined
+whitespace = " \v\t\f"
+letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+numbers = "0123456789"
+
+(->:) :: a -> Handled [a] -> Handled [a]
+(->:) x (Ok xs) = Ok (x:xs)
+(->:) x (Error err) = Error err
+
+tokenize :: String -> Handled [Token]
+tokenize code = lexer NoState code where
+    lexer :: LexerState -> String -> Handled[Token]
+    lexer _ [] = Ok [EndOfFile]
+    lexer NoState ('\"':cs) = lexer StringState cs
+    lexer NoState ('\'':cs) = lexer CharState cs
+    lexer NoState ('\n':cs) = SymbolToken NewLineSymbol ->: lexer NoState cs
+    lexer NoState (c:cs)
+        | c `elem` letters = lexer WordState (c:cs)
+        | c `elem` numbers = lexer NumState (c:cs)
+        | c `elem` whitespace = lexer NoState cs
+    
+    lexer _ _ = Error UnhandledStateError
 
 -- Implement escape sequences
 -- Implement string interpolation
