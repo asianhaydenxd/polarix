@@ -82,15 +82,15 @@ tokenize code = lexer NoState (code++" ") [] where
         | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState cs (s ++ [c])
         | otherwise = NumberToken s ->: lexer NoState (c:cs) []
     
+    -- Implement escape sequences
+    -- Implement string interpolation
+    lexer StringState [] _ = Error UnclosedStringError
+    lexer StringState (c:cs) s
+        | c /= '\"' = lexer StringState cs (s ++ [c])
+        | otherwise = StringToken s ->: lexer NoState cs []
+    
     lexer _ [] _ = Ok [EndOfFile]
     lexer _ _ _ = Error UnhandledStateError
-
--- Implement escape sequences
--- Implement string interpolation
-lexStr :: String -> Handled String
-lexStr [] = Error UnclosedStringError
-lexStr ('"':cs) = Ok []
-lexStr (c:cs) = insertChar c (lexStr cs)
 
 insertChar :: Char -> Handled String -> Handled String
 insertChar c (Ok str) = Ok (c:str)
