@@ -52,6 +52,7 @@ data LexerState
 whitespace = " \v\t\f"
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 numbers = "0123456789"
+symbols = "~`!@#$%^&*()_-+={[}]|\\:;<,>.?/"
 
 (->:) :: a -> Handled [a] -> Handled [a]
 (->:) x (Ok xs) = Ok (x:xs)
@@ -66,12 +67,18 @@ tokenize code = lexer NoState code [] where
     lexer NoState (c:cs) _
         | c `elem` letters = lexer WordState (c:cs) []
         | c `elem` numbers = lexer NumState (c:cs) []
+        | c `elem` symbols = lexer OpState (c:cs) []
         | c `elem` whitespace = lexer NoState cs []
 
     lexer WordState [] s = undefined
     lexer WordState (c:cs) s
         | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
-        | otherwise = IdentifierToken s ->: lexer NoState cs []
+        | otherwise = IdentifierToken s ->: lexer NoState (c:cs) []
+
+    lexer OpState [] s = undefined
+    lexer OpState (c:cs) s
+        | c `elem` symbols = lexer OpState cs (s ++ [c])
+        | otherwise = OperatorToken s ->: lexer NoState (c:cs) []
     
     lexer _ [] _ = Ok [EndOfFile]
     lexer _ _ _ = Error UnhandledStateError
