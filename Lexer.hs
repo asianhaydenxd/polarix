@@ -64,33 +64,28 @@ tokenize code = lexer NoState (code++" ") [] where
     lexer NoState ('\"':cs) _ = lexer StringState cs []
     lexer NoState ('\'':cs) _ = lexer CharState cs []
     lexer NoState ('\n':cs) _ = SymbolToken NewLineSymbol ->: lexer NoState cs []
-    lexer NoState (c:cs) _
-        | c `elem` letters = lexer WordState (c:cs) []
-        | c `elem` symbols = lexer OpState (c:cs) []
-        | c `elem` numbers = lexer NumState (c:cs) []
-        | c `elem` whitespace = lexer NoState cs []
+    lexer NoState (c:cs) _ | c `elem` letters    = lexer WordState (c:cs) []
+                           | c `elem` symbols    = lexer OpState (c:cs) []
+                           | c `elem` numbers    = lexer NumState (c:cs) []
+                           | c `elem` whitespace = lexer NoState cs []
 
-    lexer WordState (c:cs) s
-        | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
-        | otherwise = IdentifierToken s ->: lexer NoState (c:cs) []
+    lexer WordState (c:cs) s | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
+                             | otherwise = IdentifierToken s ->: lexer NoState (c:cs) []
 
-    lexer OpState (c:cs) s
-        | c `elem` symbols = lexer OpState cs (s ++ [c])
-        | otherwise = OperatorToken s ->: lexer NoState (c:cs) []
+    lexer OpState (c:cs) s | c `elem` symbols = lexer OpState cs (s ++ [c])
+                           | otherwise = OperatorToken s ->: lexer NoState (c:cs) []
     
-    lexer NumState (c:cs) s
-        | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState cs (s ++ [c])
-        | otherwise = NumberToken s ->: lexer NoState (c:cs) []
+    lexer NumState (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState cs (s ++ [c])
+                            | otherwise = NumberToken s ->: lexer NoState (c:cs) []
     
     -- Implement escape sequences
     -- Implement string interpolation
     lexer StringState [] _ = Error UnclosedStringError
-    lexer StringState (c:cs) s
-        | c /= '\"' = lexer StringState cs (s ++ [c])
-        | otherwise = StringToken s ->: lexer NoState cs []
+    lexer StringState (c:cs) s | c /= '\"' = lexer StringState cs (s ++ [c])
+                               | otherwise = StringToken s ->: lexer NoState cs []
     
     lexer _ [] _ = Ok [EndOfFile]
-    lexer _ _ _ = Error UnhandledStateError
+    lexer _ _ _  = Error UnhandledStateError
 
 insertChar :: Char -> Handled String -> Handled String
 insertChar c (Ok str) = Ok (c:str)
