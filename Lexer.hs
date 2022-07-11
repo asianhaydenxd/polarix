@@ -66,8 +66,8 @@ tokenize code = lexer NoState code [] where
     lexer NoState ('\n':cs) _ = SymbolToken NewLineSymbol ->: lexer NoState cs []
     lexer NoState (c:cs) _
         | c `elem` letters = lexer WordState (c:cs) []
-        | c `elem` numbers = lexer NumState (c:cs) []
         | c `elem` symbols = lexer OpState (c:cs) []
+        | c `elem` numbers = lexer NumState (c:cs) []
         | c `elem` whitespace = lexer NoState cs []
 
     lexer WordState (c:[]) s = lexer WordState (c:" ") s
@@ -79,6 +79,11 @@ tokenize code = lexer NoState code [] where
     lexer OpState (c:cs) s
         | c `elem` symbols = lexer OpState cs (s ++ [c])
         | otherwise = OperatorToken s ->: lexer NoState (c:cs) []
+    
+    lexer NumState (c:[]) s = lexer NumState (c:" ") s
+    lexer NumState (c:cs) s
+        | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState cs (s ++ [c])
+        | otherwise = NumberToken s ->: lexer NoState (c:cs) []
     
     lexer _ [] _ = Ok [EndOfFile]
     lexer _ _ _ = Error UnhandledStateError
