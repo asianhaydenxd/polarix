@@ -54,6 +54,7 @@ letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 numbers = "0123456789"
 symbols = "~`!@#$%^&*()_-+={[}]|\\:;<,>.?/"
 
+-- Like cons (:) operator for lists, but for Handled lists and preserves its error state
 (->:) :: a -> Handled [a] -> Handled [a]
 (->:) x (Ok xs) = Ok (x:xs)
 (->:) x (Error err) = Error err
