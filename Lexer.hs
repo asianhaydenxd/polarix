@@ -58,18 +58,18 @@ numbers = "0123456789"
 (->:) x (Error err) = Error err
 
 tokenize :: String -> Handled [Token]
-tokenize code = lexer NoState code where
-    lexer :: LexerState -> String -> Handled[Token]
-    lexer _ [] = Ok [EndOfFile]
-    lexer NoState ('\"':cs) = lexer StringState cs
-    lexer NoState ('\'':cs) = lexer CharState cs
-    lexer NoState ('\n':cs) = SymbolToken NewLineSymbol ->: lexer NoState cs
-    lexer NoState (c:cs)
-        | c `elem` letters = lexer WordState (c:cs)
-        | c `elem` numbers = lexer NumState (c:cs)
-        | c `elem` whitespace = lexer NoState cs
+tokenize code = lexer NoState code [] where
+    lexer :: LexerState -> String -> String -> Handled[Token]
+    lexer _ [] _ = Ok [EndOfFile]
+    lexer NoState ('\"':cs) _ = lexer StringState cs []
+    lexer NoState ('\'':cs) _ = lexer CharState cs []
+    lexer NoState ('\n':cs) _ = SymbolToken NewLineSymbol ->: lexer NoState cs []
+    lexer NoState (c:cs) _
+        | c `elem` letters = lexer WordState (c:cs) []
+        | c `elem` numbers = lexer NumState (c:cs) []
+        | c `elem` whitespace = lexer NoState cs []
     
-    lexer _ _ = Error UnhandledStateError
+    lexer _ _ _ = Error UnhandledStateError
 
 -- Implement escape sequences
 -- Implement string interpolation
