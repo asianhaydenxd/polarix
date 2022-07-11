@@ -11,34 +11,14 @@ data Handled a
     deriving Show
 
 data Token
-    = SymbolToken Symbol
+    = SymbolToken String
     | IdentifierToken String
     | OperatorToken String
     | StringToken String
     | CharToken Char
     | NumberToken String
+    | NewLineToken
     | EndOfFile
-    deriving Show
-    
-data Symbol
-    = NewLineSymbol
-    | IndentSymbol
-    | BackslashSymbol
-    | DotAccessSymbol
-    | CommaSymbol
-    | SemicolonSymbol
-    | VertBarSymbol
-    | MatchSymbol
-    | ColonSymbol
-    | ArrowSymbol
-    | ArrowBarSymbol
-    | ArrowConstraintSymbol
-    | LeftParenSymbol
-    | RightParenSymbol
-    | LeftBracketSymbol
-    | RightBracketSymbol
-    | LeftCurlyBraceSymbol
-    | RightCurlyBraceSymbol
     deriving Show
 
 data LexerState
@@ -52,9 +32,12 @@ data LexerState
 whitespace = " \v\t\f"
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 numbers = "0123456789"
-symbols = "~`!@#$%^&*()_-+={[}]|\\:;<,>.?/"
+symbols = "~`!@#$%^&*()_-+={}[]|\\:;<,>.?/"
+
+reserved_chars = "()[]{}\"\',"
 
 -- Like cons (:) operator for lists, but for Handled lists and preserves its error state
+infixr ->:
 (->:) :: a -> Handled [a] -> Handled [a]
 (->:) x (Ok xs) = Ok (x:xs)
 (->:) x (Error err) = Error err
@@ -64,16 +47,17 @@ tokenize code = lexer NoState (code++" ") [] where
     lexer :: LexerState -> String -> String -> Handled[Token]
     lexer NoState ('\"':cs) _ = lexer StringState cs []
     lexer NoState ('\'':cs) _ = lexer CharState cs []
-    lexer NoState ('\n':cs) _ = SymbolToken NewLineSymbol ->: lexer NoState cs []
-    lexer NoState (c:cs) _ | c `elem` letters    = lexer WordState (c:cs) []
-                           | c `elem` symbols    = lexer OpState (c:cs) []
-                           | c `elem` numbers    = lexer NumState (c:cs) []
-                           | c `elem` whitespace = lexer NoState cs []
+    lexer NoState ('\n':cs) _ = NewLineToken ->: lexer NoState cs []
+    lexer NoState (c:cs) _ | c `elem` reserved_chars = SymbolToken [c] ->: lexer NoState cs []
+                           | c `elem` letters        = lexer WordState (c:cs) []
+                           | c `elem` symbols        = lexer OpState (c:cs) []
+                           | c `elem` numbers        = lexer NumState (c:cs) []
+                           | c `elem` whitespace     = lexer NoState cs []
 
     lexer WordState (c:cs) s | c `elem` (letters ++ numbers) = lexer WordState cs (s ++ [c])
                              | otherwise = IdentifierToken s ->: lexer NoState (c:cs) []
 
-    lexer OpState (c:cs) s | c `elem` symbols = lexer OpState cs (s ++ [c])
+    lexer OpState (c:cs) s | c `elem` symbols && c `notElem` reserved_chars = lexer OpState cs (s ++ [c])
                            | otherwise = OperatorToken s ->: lexer NoState (c:cs) []
     
     lexer NumState (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState cs (s ++ [c])
