@@ -8,3 +8,8 @@ data Literal
     | FloatLit String
     | StringLit String
     | CharLit Char
+
+data Expression
+    = Literal Literal
+    | Function [Expression]
+    | BinOp Expression Expression
