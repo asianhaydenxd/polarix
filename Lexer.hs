@@ -66,6 +66,7 @@ infixr ->:
 
 tokenize :: String -> String -> Handled [Token]
 tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] where
+    -- TODO: store both start and end positions in tokens rather than just end
     lexer :: LexerState -> Location -> String -> String -> Handled [Token]
     lexer NoState l ('\"':cs) _ = lexer StringState (next l) cs []
     lexer NoState l ('\'':cs) _ = lexer CharState (next l) cs []
@@ -85,11 +86,12 @@ tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] wh
     lexer NumState l (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState (next l) cs (s ++ [c])
                               | otherwise = NumberToken l s ->: lexer NoState l (c:cs) []
     
-    -- Implement string interpolation
     lexer StringState l [] _ = Error UnclosedStringError
     lexer StringState l ('\\':cs) s = escapeSeq StringState (next l) cs s
     lexer StringState l (c:cs) s | c /= '\"' = lexer StringState (next l) cs (s ++ [c])
                                  | otherwise = StringToken l s ->: lexer NoState (next l) cs []
+
+    -- TODO: implement chars
     
     lexer _ l [] _ = Ok [EndOfFile l]
     lexer _ _ _ _  = Error UnhandledStateError
@@ -103,8 +105,4 @@ tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] wh
     escapeSeq state l ('s':cs) s = lexer state (next l) cs (s ++ " ")
     escapeSeq state l ('t':cs) s = lexer state (next l) cs (s ++ "\t")
     escapeSeq state l ('v':cs) s = lexer state (next l) cs (s ++ "\v")
-    escapeSeq state l (c:cs)   s = Error UnrecognizedEscapeError
-
-insertChar :: Char -> Handled String -> Handled String
-insertChar c (Ok str) = Ok (c:str)
-insertChar c (Error err) = Error err
+    escapeSeq _ _ _ _ = Error UnrecognizedEscapeError
