@@ -2,6 +2,7 @@ module Lexer where
 
 data LexError
     = UnclosedStringError
+    | UnclosedCharError
     | UnrecognizedEscapeError
     | UnhandledStateError
     deriving Show
@@ -92,7 +93,12 @@ tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] wh
     lexer StringState l (c:cs) s | c /= '\"' = lexer StringState (next l) cs (s ++ [c])
                                  | otherwise = StringToken l s ->: lexer NoState (next l) cs []
 
-    -- TODO: implement chars
+    lexer CharState l [] _ = Error UnclosedCharError
+    lexer CharState l (c:cs) s | length s > 1 = Error UnclosedCharError
+    lexer CharState l ('\\':cs) s = escapeSeq CharState (next l) cs s
+    lexer CharState l (c:cs) s | c /= '\'' = lexer CharState (next l) cs (s ++ [c])
+                               | otherwise = CharToken l (head s) ->: lexer NoState (next l) cs []
+
     
     lexer _ l [] _ = Ok [EndOfFile l]
     lexer _ _ _ _  = Error UnhandledStateError
