@@ -2,6 +2,7 @@ module Lexer where
 
 data LexError
     = UnclosedStringError
+    | UnrecognizedEscapeError
     | UnhandledStateError
     deriving Show
 
@@ -83,6 +84,7 @@ tokenize code = lexer NoState (code ++ " ") [] where
     escapeSeq state ('s':cs) s = lexer state cs (s ++ " ")
     escapeSeq state ('t':cs) s = lexer state cs (s ++ "\t")
     escapeSeq state ('v':cs) s = lexer state cs (s ++ "\v")
+    escapeSeq state (c:cs)   s = Error UnrecognizedEscapeError
 
 insertChar :: Char -> Handled String -> Handled String
 insertChar c (Ok str) = Ok (c:str)
