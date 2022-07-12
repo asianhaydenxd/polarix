@@ -45,7 +45,7 @@ infixr ->:
 
 tokenize :: String -> Handled [Token]
 tokenize code = lexer NoState (code ++ " ") [] where
-    lexer :: LexerState -> String -> String -> Handled[Token]
+    lexer :: LexerState -> String -> String -> Handled [Token]
     lexer NoState ('\"':cs) _ = lexer StringState cs []
     lexer NoState ('\'':cs) _ = lexer CharState cs []
     lexer NoState ('\n':cs) _ = NewLineToken ->: lexer NoState cs []
@@ -67,11 +67,22 @@ tokenize code = lexer NoState (code ++ " ") [] where
     -- Implement escape sequences
     -- Implement string interpolation
     lexer StringState [] _ = Error UnclosedStringError
+    lexer StringState ('\\':cs) s = escapeSeq cs s
     lexer StringState (c:cs) s | c /= '\"' = lexer StringState cs (s ++ [c])
                                | otherwise = StringToken s ->: lexer NoState cs []
     
     lexer _ [] _ = Ok [EndOfFile]
     lexer _ _ _  = Error UnhandledStateError
+
+    escapeSeq :: String -> String -> Handled [Token]
+    escapeSeq ('a':cs) s = lexer StringState cs (s ++ "\a")
+    escapeSeq ('b':cs) s = lexer StringState cs (s ++ "\b")
+    escapeSeq ('f':cs) s = lexer StringState cs (s ++ "\f")
+    escapeSeq ('n':cs) s = lexer StringState cs (s ++ "\n")
+    escapeSeq ('r':cs) s = lexer StringState cs (s ++ "\r")
+    escapeSeq ('s':cs) s = lexer StringState cs (s ++ " ")
+    escapeSeq ('t':cs) s = lexer StringState cs (s ++ "\t")
+    escapeSeq ('v':cs) s = lexer StringState cs (s ++ "\v")
 
 insertChar :: Char -> Handled String -> Handled String
 insertChar c (Ok str) = Ok (c:str)
