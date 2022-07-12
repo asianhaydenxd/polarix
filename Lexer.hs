@@ -1,10 +1,10 @@
 module Lexer where
 
 data LexError
-    = UnclosedStringError
-    | UnclosedCharError
-    | UnrecognizedEscapeError
-    | UnhandledStateError
+    = UnclosedStringError Token
+    | UnclosedCharError Token
+    | UnrecognizedEscapeError Token
+    | UnhandledStateError Token
     deriving Show
 
 data Handled a
@@ -13,9 +13,9 @@ data Handled a
     deriving Show
 
 data Location = Location
-    { index :: Integer
-    , line :: Integer
-    , column :: Integer
+    { index    :: Integer
+    , line     :: Integer
+    , column   :: Integer
     , fileName :: String
     , fileText :: String
     }
@@ -99,18 +99,17 @@ tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] wh
     lexer CharState l (c:cs) s | c /= '\'' = lexer CharState (next l) cs (s ++ [c])
                                | otherwise = CharToken l (head s) ->: lexer NoState (next l) cs []
 
-    
     lexer _ l [] _ = Ok [EndOfFile l]
     lexer _ _ _ _  = Error UnhandledStateError
 
     escapeSeq :: LexerState -> Location -> String -> String -> Handled [Token]
-    escapeSeq state l ('a':cs) s = lexer state (next l) cs (s ++ "\a")
-    escapeSeq state l ('b':cs) s = lexer state (next l) cs (s ++ "\b")
-    escapeSeq state l ('f':cs) s = lexer state (next l) cs (s ++ "\f")
-    escapeSeq state l ('n':cs) s = lexer state (next l) cs (s ++ "\n")
-    escapeSeq state l ('r':cs) s = lexer state (next l) cs (s ++ "\r")
-    escapeSeq state l ('s':cs) s = lexer state (next l) cs (s ++ " ")
-    escapeSeq state l ('t':cs) s = lexer state (next l) cs (s ++ "\t")
-    escapeSeq state l ('v':cs) s = lexer state (next l) cs (s ++ "\v")
-    escapeSeq state l ('\\':cs)s = lexer state (next l) cs (s ++ "\\")
+    escapeSeq state l ('a':cs)  s = lexer state (next l) cs (s ++ "\a")
+    escapeSeq state l ('b':cs)  s = lexer state (next l) cs (s ++ "\b")
+    escapeSeq state l ('f':cs)  s = lexer state (next l) cs (s ++ "\f")
+    escapeSeq state l ('n':cs)  s = lexer state (next l) cs (s ++ "\n")
+    escapeSeq state l ('r':cs)  s = lexer state (next l) cs (s ++ "\r")
+    escapeSeq state l ('s':cs)  s = lexer state (next l) cs (s ++ " ")
+    escapeSeq state l ('t':cs)  s = lexer state (next l) cs (s ++ "\t")
+    escapeSeq state l ('v':cs)  s = lexer state (next l) cs (s ++ "\v")
+    escapeSeq state l ('\\':cs) s = lexer state (next l) cs (s ++ "\\")
     escapeSeq _ _ _ _ = Error UnrecognizedEscapeError
