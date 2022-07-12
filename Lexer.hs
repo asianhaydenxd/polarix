@@ -65,7 +65,6 @@ tokenize code = lexer NoState (code ++ " ") [] where
     lexer NumState (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState cs (s ++ [c])
                             | otherwise = NumberToken s ->: lexer NoState (c:cs) []
     
-    -- Implement escape sequences
     -- Implement string interpolation
     lexer StringState [] _ = Error UnclosedStringError
     lexer StringState ('\\':cs) s = escapeSeq StringState cs s
