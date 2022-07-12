@@ -67,6 +67,7 @@ infixr ->:
 tokenize :: String -> String -> Handled [Token]
 tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] where
     -- TODO: store both start and end positions in tokens rather than just end
+    -- TODO: store tokens in errors
     lexer :: LexerState -> Location -> String -> String -> Handled [Token]
     lexer NoState l ('\"':cs) _ = lexer StringState (next l) cs []
     lexer NoState l ('\'':cs) _ = lexer CharState (next l) cs []
