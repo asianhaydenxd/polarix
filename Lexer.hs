@@ -112,4 +112,5 @@ tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] wh
     escapeSeq state l ('s':cs) s = lexer state (next l) cs (s ++ " ")
     escapeSeq state l ('t':cs) s = lexer state (next l) cs (s ++ "\t")
     escapeSeq state l ('v':cs) s = lexer state (next l) cs (s ++ "\v")
+    escapeSeq state l ('\\':cs)s = lexer state (next l) cs (s ++ "\\")
     escapeSeq _ _ _ _ = Error UnrecognizedEscapeError
