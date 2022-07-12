@@ -1,15 +1,15 @@
 module Lexer where
 
 data LexError
-    = UnclosedStringError Token
-    | UnclosedCharError Token
-    | UnrecognizedEscapeError Token
-    | UnhandledStateError Token
+    = UnclosedStringError
+    | UnclosedCharError
+    | UnrecognizedEscapeError
+    | UnhandledStateError
     deriving Show
 
 data Handled a
     = Ok a
-    | Error LexError
+    | Error LexError Location
     deriving Show
 
 data Location = Location
@@ -63,12 +63,12 @@ reserved_chars = "()[]{}\"\',"
 infixr ->:
 (->:) :: a -> Handled [a] -> Handled [a]
 (->:) x (Ok xs) = Ok (x:xs)
-(->:) x (Error err) = Error err
+(->:) x (Error err l) = Error err l
 
 tokenize :: String -> String -> Handled [Token]
 tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] where
     -- TODO: store both start and end positions in tokens rather than just end
-    -- TODO: store tokens in errors
+    -- TODO: fix precise positioning of tokens
     lexer :: LexerState -> Location -> String -> String -> Handled [Token]
     lexer NoState l ('\"':cs) _ = lexer StringState (next l) cs []
     lexer NoState l ('\'':cs) _ = lexer CharState (next l) cs []
@@ -88,19 +88,19 @@ tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] wh
     lexer NumState l (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState (next l) cs (s ++ [c])
                               | otherwise = NumberToken l s ->: lexer NoState l (c:cs) []
     
-    lexer StringState l [] _ = Error UnclosedStringError
+    lexer StringState l [] _ = Error UnclosedStringError l
     lexer StringState l ('\\':cs) s = escapeSeq StringState (next l) cs s
     lexer StringState l (c:cs) s | c /= '\"' = lexer StringState (next l) cs (s ++ [c])
                                  | otherwise = StringToken l s ->: lexer NoState (next l) cs []
 
-    lexer CharState l [] _ = Error UnclosedCharError
-    lexer CharState l (c:cs) s | length s > 1 = Error UnclosedCharError
+    lexer CharState l [] _ = Error UnclosedCharError l
+    lexer CharState l (c:cs) s | length s > 1 = Error UnclosedCharError l
     lexer CharState l ('\\':cs) s = escapeSeq CharState (next l) cs s
     lexer CharState l (c:cs) s | c /= '\'' = lexer CharState (next l) cs (s ++ [c])
                                | otherwise = CharToken l (head s) ->: lexer NoState (next l) cs []
 
     lexer _ l [] _ = Ok [EndOfFile l]
-    lexer _ _ _ _  = Error UnhandledStateError
+    lexer _ l _  _ = Error UnhandledStateError l
 
     escapeSeq :: LexerState -> Location -> String -> String -> Handled [Token]
     escapeSeq state l ('a':cs)  s = lexer state (next l) cs (s ++ "\a")
@@ -112,4 +112,4 @@ tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] wh
     escapeSeq state l ('t':cs)  s = lexer state (next l) cs (s ++ "\t")
     escapeSeq state l ('v':cs)  s = lexer state (next l) cs (s ++ "\v")
     escapeSeq state l ('\\':cs) s = lexer state (next l) cs (s ++ "\\")
-    escapeSeq _ _ _ _ = Error UnrecognizedEscapeError
+    escapeSeq _     l _         _ = Error UnrecognizedEscapeError l
