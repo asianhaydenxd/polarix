@@ -67,22 +67,22 @@ tokenize code = lexer NoState (code ++ " ") [] where
     -- Implement escape sequences
     -- Implement string interpolation
     lexer StringState [] _ = Error UnclosedStringError
-    lexer StringState ('\\':cs) s = escapeSeq cs s
+    lexer StringState ('\\':cs) s = escapeSeq StringState cs s
     lexer StringState (c:cs) s | c /= '\"' = lexer StringState cs (s ++ [c])
                                | otherwise = StringToken s ->: lexer NoState cs []
     
     lexer _ [] _ = Ok [EndOfFile]
     lexer _ _ _  = Error UnhandledStateError
 
-    escapeSeq :: String -> String -> Handled [Token]
-    escapeSeq ('a':cs) s = lexer StringState cs (s ++ "\a")
-    escapeSeq ('b':cs) s = lexer StringState cs (s ++ "\b")
-    escapeSeq ('f':cs) s = lexer StringState cs (s ++ "\f")
-    escapeSeq ('n':cs) s = lexer StringState cs (s ++ "\n")
-    escapeSeq ('r':cs) s = lexer StringState cs (s ++ "\r")
-    escapeSeq ('s':cs) s = lexer StringState cs (s ++ " ")
-    escapeSeq ('t':cs) s = lexer StringState cs (s ++ "\t")
-    escapeSeq ('v':cs) s = lexer StringState cs (s ++ "\v")
+    escapeSeq :: LexerState -> String -> String -> Handled [Token]
+    escapeSeq state ('a':cs) s = lexer state cs (s ++ "\a")
+    escapeSeq state ('b':cs) s = lexer state cs (s ++ "\b")
+    escapeSeq state ('f':cs) s = lexer state cs (s ++ "\f")
+    escapeSeq state ('n':cs) s = lexer state cs (s ++ "\n")
+    escapeSeq state ('r':cs) s = lexer state cs (s ++ "\r")
+    escapeSeq state ('s':cs) s = lexer state cs (s ++ " ")
+    escapeSeq state ('t':cs) s = lexer state cs (s ++ "\t")
+    escapeSeq state ('v':cs) s = lexer state cs (s ++ "\v")
 
 insertChar :: Char -> Handled String -> Handled String
 insertChar c (Ok str) = Ok (c:str)
