@@ -23,14 +23,14 @@ data Location = Location
 instance Show Location where
     show (Location _ line column fileName _) = fileName ++ ":" ++ show line ++ ":" ++ show column
 
-startlocation :: String -> String -> Location
-startlocation name text = Location 0 0 0 name text
+startLocation :: String -> String -> Location
+startLocation = Location 0 0 0
 
 next :: Location -> Location
 next (Location index line column fileName fileText)
-    | fromIntegral index >= length fileText    = Location (index + 1) line       (column + 1) fileName fileText
-    | fileText !! fromIntegral (index) == '\n' = Location (index + 1) (line + 1) 0            fileName fileText
-    | otherwise                                = Location (index + 1) line       (column + 1) fileName fileText
+    | fromIntegral index >= length fileText  = Location (index + 1) line       (column + 1) fileName fileText
+    | fileText !! fromIntegral index == '\n' = Location (index + 1) (line + 1) 0            fileName fileText
+    | otherwise                              = Location (index + 1) line       (column + 1) fileName fileText
 
 data Token
     = SymbolToken     Location String
@@ -56,8 +56,8 @@ letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 numbers = "0123456789"
 symbols = "~`!@#$%^&*()_-+={}[]|\\:;<,>.?/"
 
-word_symbols = "\'_"
-reserved_chars = "()[]{}\"\',"
+wordSymbols = "\'_"
+reservedChars = "()[]{}\"\',"
 
 -- Like cons (:) operator for lists, but for Handled lists and preserves its error state
 infixr ->:
@@ -66,23 +66,23 @@ infixr ->:
 (->:) x (Error err l) = Error err l
 
 tokenize :: String -> String -> Handled [Token]
-tokenize name code = lexer NoState (startlocation name code) (code ++ " ") [] where
+tokenize name code = lexer NoState (startLocation name code) (code ++ " ") [] where
     -- TODO: store both start and end positions in tokens rather than just end
     -- TODO: fix precise positioning of tokens
     lexer :: LexerState -> Location -> String -> String -> Handled [Token]
     lexer NoState l ('\"':cs) _ = lexer StringState (next l) cs []
     lexer NoState l ('\'':cs) _ = lexer CharState (next l) cs []
     lexer NoState l ('\n':cs) _ = NewLineToken l ->: lexer NoState (next l) cs []
-    lexer NoState l (c:cs) _ | c `elem` reserved_chars = SymbolToken l [c] ->: lexer NoState (next l) cs []
+    lexer NoState l (c:cs) _ | c `elem` reservedChars = SymbolToken l [c] ->: lexer NoState (next l) cs []
                              | c `elem` letters        = lexer WordState l (c:cs) []
                              | c `elem` symbols        = lexer OpState   l (c:cs) []
                              | c `elem` numbers        = lexer NumState  l (c:cs) []
                              | c `elem` whitespace     = lexer NoState   (next l) cs []
 
-    lexer WordState l (c:cs) s | c `elem` (letters ++ numbers ++ word_symbols) = lexer WordState (next l) cs (s ++ [c])
+    lexer WordState l (c:cs) s | c `elem` (letters ++ numbers ++ wordSymbols) = lexer WordState (next l) cs (s ++ [c])
                                | otherwise = IdentifierToken l s ->: lexer NoState l (c:cs) []
 
-    lexer OpState l (c:cs) s | c `elem` symbols && c `notElem` reserved_chars = lexer OpState (next l) cs (s ++ [c])
+    lexer OpState l (c:cs) s | c `elem` symbols && c `notElem` reservedChars = lexer OpState (next l) cs (s ++ [c])
                              | otherwise = OperatorToken l s ->: lexer NoState l (c:cs) []
     
     lexer NumState l (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState (next l) cs (s ++ [c])
