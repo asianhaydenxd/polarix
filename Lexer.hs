@@ -33,23 +33,23 @@ next (Location index line column fileName fileText)
     | otherwise                              = Location (index + 1) line       (column + 1) fileName fileText
 
 data Token
-    = SymbolToken     Location String
-    | IdentifierToken Location String
-    | OperatorToken   Location String
-    | StringToken     Location String
-    | CharToken       Location Char  
-    | NumberToken     Location String
+    = SymbolToken     Location Location String
+    | IdentifierToken Location Location String
+    | OperatorToken   Location Location String
+    | StringToken     Location Location String
+    | CharToken       Location Location Char  
+    | NumberToken     Location Location String
     | NewLineToken    Location
     | EndOfFile       Location
     deriving Show
 
 data LexerState
     = NoState
-    | StringState
-    | CharState
-    | WordState
-    | OpState
-    | NumState
+    | StringState Location
+    | CharState   Location
+    | WordState   Location
+    | OpState     Location
+    | NumState    Location
 
 whitespace = " \v\t\f"
 letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -67,37 +67,36 @@ infixr ->:
 
 tokenize :: String -> String -> Handled [Token]
 tokenize name code = lexer NoState (startLocation name code) (code ++ " ") [] where
-    -- TODO: store both start and end positions in tokens rather than just end
     -- TODO: fix precise positioning of tokens
     lexer :: LexerState -> Location -> String -> String -> Handled [Token]
-    lexer NoState l ('\"':cs) _ = lexer StringState (next l) cs []
-    lexer NoState l ('\'':cs) _ = lexer CharState (next l) cs []
+    lexer NoState l ('\"':cs) _ = lexer (StringState l) (next l) cs []
+    lexer NoState l ('\'':cs) _ = lexer (CharState l) (next l) cs []
     lexer NoState l ('\n':cs) _ = NewLineToken l ->: lexer NoState (next l) cs []
-    lexer NoState l (c:cs) _ | c `elem` reservedChars = SymbolToken l [c] ->: lexer NoState (next l) cs []
-                             | c `elem` letters        = lexer WordState l (c:cs) []
-                             | c `elem` symbols        = lexer OpState   l (c:cs) []
-                             | c `elem` numbers        = lexer NumState  l (c:cs) []
-                             | c `elem` whitespace     = lexer NoState   (next l) cs []
+    lexer NoState l (c:cs) _ | c `elem` reservedChars = SymbolToken l l [c] ->: lexer NoState (next l) cs []
+                             | c `elem` letters       = lexer (WordState l) l (c:cs) []
+                             | c `elem` symbols       = lexer (OpState   l) l (c:cs) []
+                             | c `elem` numbers       = lexer (NumState  l) l (c:cs) []
+                             | c `elem` whitespace    = lexer NoState (next l) cs []
 
-    lexer WordState l (c:cs) s | c `elem` (letters ++ numbers ++ wordSymbols) = lexer WordState (next l) cs (s ++ [c])
-                               | otherwise = IdentifierToken l s ->: lexer NoState l (c:cs) []
+    lexer (WordState sl) l (c:cs) s | c `elem` (letters ++ numbers ++ wordSymbols) = lexer (WordState sl) (next l) cs (s ++ [c])
+                                    | otherwise = IdentifierToken sl l s ->: lexer NoState l (c:cs) []
 
-    lexer OpState l (c:cs) s | c `elem` symbols && c `notElem` reservedChars = lexer OpState (next l) cs (s ++ [c])
-                             | otherwise = OperatorToken l s ->: lexer NoState l (c:cs) []
+    lexer (OpState sl) l (c:cs) s | c `elem` symbols && c `notElem` reservedChars = lexer (OpState sl) (next l) cs (s ++ [c])
+                                  | otherwise = OperatorToken sl l s ->: lexer NoState l (c:cs) []
     
-    lexer NumState l (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer NumState (next l) cs (s ++ [c])
-                              | otherwise = NumberToken l s ->: lexer NoState l (c:cs) []
+    lexer (NumState sl) l (c:cs) s | ('.' `notElem` s && c `elem` ('.':numbers)) || ('.' `elem` s && c `elem` numbers) = lexer (NumState sl) (next l) cs (s ++ [c])
+                                   | otherwise = NumberToken sl l s ->: lexer NoState l (c:cs) []
     
-    lexer StringState l [] _ = Error UnclosedStringError l
-    lexer StringState l ('\\':cs) s = escapeSeq StringState (next l) cs s
-    lexer StringState l (c:cs) s | c /= '\"' = lexer StringState (next l) cs (s ++ [c])
-                                 | otherwise = StringToken l s ->: lexer NoState (next l) cs []
+    lexer (StringState sl) l [] _ = Error UnclosedStringError l
+    lexer (StringState sl) l ('\\':cs) s = escapeSeq (StringState sl) (next l) cs s
+    lexer (StringState sl) l (c:cs) s | c /= '\"' = lexer (StringState sl) (next l) cs (s ++ [c])
+                                      | otherwise = StringToken sl l s ->: lexer NoState (next l) cs []
 
-    lexer CharState l [] _ = Error UnclosedCharError l
-    lexer CharState l (c:cs) s | length s > 1 = Error UnclosedCharError l
-    lexer CharState l ('\\':cs) s = escapeSeq CharState (next l) cs s
-    lexer CharState l (c:cs) s | c /= '\'' = lexer CharState (next l) cs (s ++ [c])
-                               | otherwise = CharToken l (head s) ->: lexer NoState (next l) cs []
+    lexer (CharState sl) l [] _ = Error UnclosedCharError l
+    lexer (CharState sl) l (c:cs) s | length s > 1 = Error UnclosedCharError l
+    lexer (CharState sl) l ('\\':cs) s = escapeSeq (CharState sl) (next l) cs s
+    lexer (CharState sl) l (c:cs) s | c /= '\'' = lexer (CharState sl) (next l) cs (s ++ [c])
+                                    | otherwise = CharToken sl l (head s) ->: lexer NoState (next l) cs []
 
     lexer _ l [] _ = Ok [EndOfFile l]
     lexer _ l _  _ = Error UnhandledStateError l
