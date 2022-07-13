@@ -1,6 +1,15 @@
 module Parser where
 
-import qualified Lexer
+import Lexer
+
+type ModuleLabel = String
+
+data Module = Module ModuleLabel [ModuleLabel] [Declaration]
+
+data Declaration
+    = Function
+    | Struct
+    | Enum
 
 data Type
     = Type String
@@ -8,7 +17,7 @@ data Type
 
 data Expression
     = Literal Literal
-    | Function [Expression]
+    | FunctionOp [Expression]
     | BinOp Expression Expression
 
 data Literal
@@ -17,3 +26,6 @@ data Literal
     | FloatLit String
     | StringLit String
     | CharLit Char
+
+parse :: [Token] -> Handled Module
+parse ts = undefined
