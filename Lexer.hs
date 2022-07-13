@@ -67,7 +67,6 @@ infixr ->:
 
 tokenize :: String -> String -> Handled [Token]
 tokenize name code = lexer NoState (startLocation name code) (code ++ " ") [] where
-    -- TODO: fix precise positioning of tokens
     lexer :: LexerState -> Location -> String -> String -> Handled [Token]
     lexer NoState l ('\"':cs) _ = lexer (StringState l) (next l) cs []
     lexer NoState l ('\'':cs) _ = lexer (CharState l) (next l) cs []
@@ -90,13 +89,13 @@ tokenize name code = lexer NoState (startLocation name code) (code ++ " ") [] wh
     lexer (StringState sl) l [] _ = Error UnclosedStringError l
     lexer (StringState sl) l ('\\':cs) s = escapeSeq (StringState sl) (next l) cs s
     lexer (StringState sl) l (c:cs) s | c /= '\"' = lexer (StringState sl) (next l) cs (s ++ [c])
-                                      | otherwise = StringToken sl l s ->: lexer NoState (next l) cs []
+                                      | otherwise = StringToken sl (next l) s ->: lexer NoState (next l) cs []
 
     lexer (CharState sl) l [] _ = Error UnclosedCharError l
     lexer (CharState sl) l (c:cs) s | length s > 1 = Error UnclosedCharError l
     lexer (CharState sl) l ('\\':cs) s = escapeSeq (CharState sl) (next l) cs s
     lexer (CharState sl) l (c:cs) s | c /= '\'' = lexer (CharState sl) (next l) cs (s ++ [c])
-                                    | otherwise = CharToken sl l (head s) ->: lexer NoState (next l) cs []
+                                    | otherwise = CharToken sl (next l) (head s) ->: lexer NoState (next l) cs []
 
     lexer _ l [] _ = Ok [EndOfFile l]
     lexer _ l _  _ = Error UnhandledStateError l
